@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RC Cruise Price Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy: #0a1628;
+    --ocean: #0d3b6e;
+    --wave: #1565c0;
+    --aqua: #00b4d8;
+    --foam: #90e0ef;
+    --gold: #f4a261;
+    --coral: #e76f51;
+    --white: #f0f4f8;
+    --muted: #8fa3bc;
+    --card: rgba(13,59,110,0.5);
+    --border: rgba(0,180,216,0.2);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated ocean background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(21,101,192,0.3) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(0,180,216,0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 60% 80%, rgba(10,22,40,0.8) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 40px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .header-left h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(36px, 6vw, 72px);
+    letter-spacing: 3px;
+    line-height: 0.9;
+    background: linear-gradient(135deg, var(--white) 0%, var(--aqua) 60%, var(--foam) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header-left .sub {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 6px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .header-right {
+    text-align: right;
+  }
+
+  .last-updated {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--aqua);
+    background: rgba(0,180,216,0.1);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 20px;
+  }
+
+  /* STAT CARDS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    backdrop-filter: blur(12px);
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .stat-card:hover {
+    border-color: var(--aqua);
+    transform: translateY(-2px);
+  }
+
+  .stat-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 1px;
+    line-height: 1;
+    color: var(--aqua);
+  }
+
+  .stat-value.gold { color: var(--gold); }
+  .stat-value.coral { color: var(--coral); }
+  .stat-value.white { color: var(--white); }
+
+  .stat-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* FILTERS */
+  .filters {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    align-items: center;
+  }
+
+  .filter-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    white-space: nowrap;
+  }
+
+  .filter-select {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--white);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .filter-select:focus, .filter-select:hover {
+    border-color: var(--aqua);
+  }
+
+  .filter-select option { background: var(--ocean); }
+
+  .sort-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .sort-btn.active, .sort-btn:hover {
+    border-color: var(--aqua);
+    color: var(--aqua);
+    background: rgba(0,180,216,0.1);
+  }
+
+  /* GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+  }
+
+  /* SAILING CARD */
+  .sailing-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+    backdrop-filter: blur(12px);
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .sailing-card:hover {
+    border-color: var(--aqua);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,180,216,0.2);
+  }
+
+  .sailing-card.selected {
+    border-color: var(--aqua);
+    box-shadow: 0 0 0 2px rgba(0,180,216,0.4);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-header {
+    padding: 20px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .ship-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: var(--white);
+    line-height: 1;
+  }
+
+  .destination-tag {
+    font-size: 11px;
+    color: var(--aqua);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-top: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .price-block {
+    text-align: right;
+  }
+
+  .current-price {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 1px;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .original-price {
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: line-through;
+    margin-top: 2px;
+  }
+
+  .card-meta {
+    padding: 14px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .meta-key {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .meta-val {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--white);
+  }
+
+  .trend-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 2px;
+  }
+
+  .trend-badge.down {
+    background: rgba(100,200,100,0.15);
+    color: #7ecb7e;
+    border: 1px solid rgba(100,200,100,0.3);
+  }
+
+  .trend-badge.up {
+    background: rgba(231,111,81,0.15);
+    color: var(--coral);
+    border: 1px solid rgba(231,111,81,0.3);
+  }
+
+  .trend-badge.flat {
+    background: rgba(143,163,188,0.15);
+    color: var(--muted);
+    border: 1px solid rgba(143,163,188,0.2);
+  }
+
+  .mini-chart-wrap {
+    padding: 0 20px 16px;
+    height: 60px;
+  }
+
+  .card-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .per-night {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .per-night span {
+    color: var(--foam);
+    font-weight: 500;
+  }
+
+  .view-btn {
+    font-size: 12px;
+    color: var(--aqua);
+    text-decoration: none;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: 'DM Mono', monospace;
+    transition: color 0.2s;
+  }
+
+  .view-btn:hover { color: var(--foam); }
+
+  /* DETAIL PANEL */
+  .detail-panel {
+    display: none;
+    background: var(--card);
+    border: 1px solid var(--aqua);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 28px;
+    backdrop-filter: blur(12px);
+    animation: fadeUp 0.3s ease;
+  }
+
+  .detail-panel.visible { display: block; }
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .detail-ship {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 2px;
+    line-height: 1;
+    color: var(--white);
+  }
+
+  .detail-dest {
+    color: var(--aqua);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+
+  .close-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .close-btn:hover { border-color: var(--coral); color: var(--coral); }
+
+  .detail-chart-wrap {
+    height: 260px;
+    margin-bottom: 20px;
+  }
+
+  .price-range-bar {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .range-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .range-key {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .range-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+
+  .range-val.low { color: #7ecb7e; }
+  .range-val.high { color: var(--coral); }
+  .range-val.now { color: var(--gold); }
+  .range-val.avg { color: var(--foam); }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 80px 40px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+
+  .empty-state .icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--ocean); border-radius: 3px; }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .count-badge {
+    background: rgba(0,180,216,0.15);
+    color: var(--aqua);
+    border: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 2px 10px;
+    border-radius: 20px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="header-left">
+      <h1>RC Price Radar</h1>
+      <div class="sub">Royal Caribbean · US Ports · All Ships</div>
+    </div>
+    <div class="header-right">
+      <div class="last-updated" id="last-updated">Loading...</div>
+    </div>
+  </header>
+
+  <div class="stats-row" id="stats-row"></div>
+
+  <div id="detail-panel" class="detail-panel">
+    <div class="detail-header">
+      <div>
+        <div class="detail-ship" id="detail-ship"></div>
+        <div class="detail-dest" id="detail-dest"></div>
+      </div>
+      <button class="close-btn" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="price-range-bar" id="detail-range"></div>
+    <div class="detail-chart-wrap">
+      <canvas id="detail-chart"></canvas>
+    </div>
+  </div>
+
+  <div class="filters" id="filters-row">
+    <span class="filter-label">Filter:</span>
+    <select class="filter-select" id="filter-port" onchange="render()">
+      <option value="">All Ports</option>
+    </select>
+    <select class="filter-select" id="filter-dest" onchange="render()">
+      <option value="">All Destinations</option>
+    </select>
+    <select class="filter-select" id="filter-nights" onchange="render()">
+      <option value="">Any Length</option>
+      <option value="4">4 nights or fewer</option>
+      <option value="7">7 nights</option>
+      <option value="10">10+ nights</option>
+    </select>
+    <span class="filter-label" style="margin-left:8px">Sort:</span>
+    <button class="sort-btn active" id="sort-price" onclick="setSort('price')">Price ↑</button>
+    <button class="sort-btn" id="sort-pn" onclick="setSort('pn')">Per Night</button>
+    <button class="sort-btn" id="sort-drop" onclick="setSort('drop')">Biggest Drop</button>
+  </div>
+
+  <div class="section-title">
+    Sailings <span class="count-badge" id="count-badge">—</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+let DATA = null;
+let selectedId = null;
+let sortMode = 'price';
+let detailChart = null;
+
+// ── Helpers ──────────────────────────────────────────────────────
+function fmt(n) {
+  return '$' + Number(n).toLocaleString();
+}
+
+function currentPrice(sailing) {
+  const h = sailing.price_history;
+  return h.length ? h[h.length - 1].price : 0;
+}
+
+function minPrice(sailing) {
+  return Math.min(...sailing.price_history.map(p => p.price));
+}
+
+function maxPrice(sailing) {
+  return Math.max(...sailing.price_history.map(p => p.price));
+}
+
+function avgPrice(sailing) {
+  const prices = sailing.price_history.map(p => p.price);
+  return Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
+}
+
+function priceChange(sailing) {
+  const h = sailing.price_history;
+  if (h.length < 2) return 0;
+  return h[h.length - 1].price - h[h.length - 2].price;
+}
+
+function totalDrop(sailing) {
+  const h = sailing.price_history;
+  if (h.length < 2) return 0;
+  return h[0].price - h[h.length - 1].price;
+}
+
+function portLabel(code) {
+  const ports = {
+    MIA: 'Miami, FL', FLL: 'Fort Lauderdale, FL', GAL: 'Galveston, TX',
+    LAX: 'Los Angeles, CA', FLL: 'Fort Lauderdale, FL', NOR: 'New Orleans, LA',
+    NYC: 'New York, NY', BOS: 'Boston, MA', SEA: 'Seattle, WA',
+    TPA: 'Tampa, FL', JAX: 'Jacksonville, FL', SAN: 'San Diego, CA'
+  };
+  return ports[code] || code;
+}
+
+// ── Load Data ─────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    // In production (GitHub Pages), reads from data/prices.json in same repo
+    const res = await fetch('data/prices.json');
+    DATA = await res.json();
+  } catch (e) {
+    // Fallback: embedded sample data for local preview
+    DATA = SAMPLE_DATA;
+  }
+  init();
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+function init() {
+  document.getElementById('last-updated').textContent =
+    '⬤  Updated ' + DATA.last_updated;
+
+  const sailings = Object.values(DATA.sailings);
+
+  // Populate filters
+  const ports = [...new Set(sailings.map(s => s.departure_port))].sort();
+  const dests = [...new Set(sailings.map(s => s.destination))].sort();
+
+  ports.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p; o.textContent = `${p} – ${portLabel(p)}`;
+    document.getElementById('filter-port').appendChild(o);
+  });
+
+  dests.forEach(d => {
+    const o = document.createElement('option');
+    o.value = d; o.textContent = d;
+    document.getElementById('filter-dest').appendChild(o);
+  });
+
+  renderStats(sailings);
+  render();
+}
+
+// ── Stats ─────────────────────────────────────────────────────────
+function renderStats(sailings) {
+  const prices = sailings.map(s => currentPrice(s));
+  const lowest = Math.min(...prices);
+  const drops = sailings.filter(s => priceChange(s) < 0).length;
+  const biggest = Math.max(...sailings.map(s => Math.abs(totalDrop(s))));
+  const avgAll = Math.round(prices.reduce((a,b)=>a+b,0)/prices.length);
+
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Lowest Price</div>
+      <div class="stat-value gold">${fmt(lowest)}</div>
+      <div class="stat-sub">today's best</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Price</div>
+      <div class="stat-value white">${fmt(avgAll)}</div>
+      <div class="stat-sub">across all sailings</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Dropped Today</div>
+      <div class="stat-value">${drops}</div>
+      <div class="stat-sub">sailings went lower</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Biggest Drop</div>
+      <div class="stat-value coral">-${fmt(biggest)}</div>
+      <div class="stat-sub">7-day change</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Tracking</div>
+      <div class="stat-value white">${sailings.length}</div>
+      <div class="stat-sub">total sailings</div>
+    </div>
+  `;
+}
+
+// ── Sort & Filter ─────────────────────────────────────────────────
+function setSort(mode) {
+  sortMode = mode;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sort-' + mode)?.classList.add('active');
+  render();
+}
+
+function getFiltered() {
+  const port = document.getElementById('filter-port').value;
+  const dest = document.getElementById('filter-dest').value;
+  const nights = document.getElementById('filter-nights').value;
+
+  let sailings = Object.entries(DATA.sailings).map(([id, s]) => ({ id, ...s }));
+
+  if (port) sailings = sailings.filter(s => s.departure_port === port);
+  if (dest) sailings = sailings.filter(s => s.destination === dest);
+  if (nights === '4') sailings = sailings.filter(s => s.nights <= 4);
+  if (nights === '7') sailings = sailings.filter(s => s.nights === 7);
+  if (nights === '10') sailings = sailings.filter(s => s.nights >= 10);
+
+  if (sortMode === 'price') sailings.sort((a,b) => currentPrice(a) - currentPrice(b));
+  if (sortMode === 'pn')    sailings.sort((a,b) => (currentPrice(a)/a.nights) - (currentPrice(b)/b.nights));
+  if (sortMode === 'drop')  sailings.sort((a,b) => totalDrop(b) - totalDrop(a));
+
+  return sailings;
+}
+
+// ── Render Cards ──────────────────────────────────────────────────
+function render() {
+  const sailings = getFiltered();
+  document.getElementById('count-badge').textContent = sailings.length;
+
+  const grid = document.getElementById('grid');
+
+  if (sailings.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <span class="icon">🚢</span>No sailings match your filters.
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = sailings.map((s, i) => {
+    const cp = currentPrice(s);
+    const orig = s.price_history[0]?.original_price || cp;
+    const pn = Math.round(cp / s.nights);
+    const change = priceChange(s);
+    const drop = totalDrop(s);
+    const trend = change < 0
+      ? `<span class="trend-badge down">▼ ${fmt(Math.abs(change))} today</span>`
+      : change > 0
+      ? `<span class="trend-badge up">▲ ${fmt(change)} today</span>`
+      : `<span class="trend-badge flat">— no change</span>`;
+
+    return `
+    <div class="sailing-card${s.id === selectedId ? ' selected' : ''}"
+         style="animation-delay:${i * 0.05}s"
+         onclick="selectSailing('${s.id}')">
+      <div class="card-header">
+        <div>
+          <div class="ship-name">${s.ship}</div>
+          <div class="destination-tag">${s.destination}</div>
+          ${trend}
+        </div>
+        <div class="price-block">
+          <div class="current-price">${fmt(cp)}</div>
+          ${orig !== cp ? `<div class="original-price">${fmt(orig)}</div>` : ''}
+        </div>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item">
+          <span class="meta-key">Port</span>
+          <span class="meta-val">${s.departure_port}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-key">Departs</span>
+          <span class="meta-val">${formatDate(s.departure_date)}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-key">Nights</span>
+          <span class="meta-val">${s.nights}n</span>
+        </div>
+      </div>
+      <div class="mini-chart-wrap">
+        <canvas id="mini-${s.id}"></canvas>
+      </div>
+      <div class="card-footer">
+        <div class="per-night">Per night: <span>${fmt(pn)}</span></div>
+        ${drop > 0 ? `<div style="font-size:12px;color:#7ecb7e;font-family:'DM Mono',monospace">▼${fmt(drop)} from start</div>` : ''}
+        <a class="view-btn" href="${s.url}" target="_blank" onclick="event.stopPropagation()">View →</a>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Draw mini charts
+  sailings.forEach(s => {
+    const canvas = document.getElementById(`mini-${s.id}`);
+    if (!canvas) return;
+    const prices = s.price_history.map(p => p.price);
+    new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: s.price_history.map(p => p.date),
+        datasets: [{
+          data: prices,
+          borderColor: priceChange(s) < 0 ? '#7ecb7e' : priceChange(s) > 0 ? '#e76f51' : '#00b4d8',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.4,
+          fill: true,
+          backgroundColor: priceChange(s) < 0
+            ? 'rgba(126,203,126,0.1)'
+            : priceChange(s) > 0
+            ? 'rgba(231,111,81,0.1)'
+            : 'rgba(0,180,216,0.08)'
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } },
+        animation: false
+      }
+    });
+  });
+}
+
+// ── Detail Panel ──────────────────────────────────────────────────
+function selectSailing(id) {
+  if (selectedId === id) { closeDetail(); return; }
+  selectedId = id;
+  render();
+  showDetail(id);
+  document.getElementById('detail-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showDetail(id) {
+  const s = DATA.sailings[id];
+  if (!s) return;
+
+  document.getElementById('detail-ship').textContent = s.ship;
+  document.getElementById('detail-dest').textContent =
+    `${s.destination} · ${portLabel(s.departure_port)} · ${s.nights} nights · ${formatDate(s.departure_date)}`;
+
+  const cp = currentPrice(s);
+  const mn = minPrice(s);
+  const mx = maxPrice(s);
+  const av = avgPrice(s);
+  const dr = totalDrop(s);
+
+  document.getElementById('detail-range').innerHTML = `
+    <div class="range-item"><div class="range-key">Current</div><div class="range-val now">${fmt(cp)}</div></div>
+    <div class="range-item"><div class="range-key">7-Day Low</div><div class="range-val low">${fmt(mn)}</div></div>
+    <div class="range-item"><div class="range-key">7-Day High</div><div class="range-val high">${fmt(mx)}</div></div>
+    <div class="range-item"><div class="range-key">Average</div><div class="range-val avg">${fmt(av)}</div></div>
+    ${dr > 0 ? `<div class="range-item"><div class="range-key">Total Drop</div><div class="range-val low">-${fmt(dr)}</div></div>` : ''}
+  `;
+
+  const panel = document.getElementById('detail-panel');
+  panel.classList.add('visible');
+
+  if (detailChart) detailChart.destroy();
+  const ctx = document.getElementById('detail-chart').getContext('2d');
+  detailChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: s.price_history.map(p => p.date),
+      datasets: [{
+        label: 'Price',
+        data: s.price_history.map(p => p.price),
+        borderColor: '#00b4d8',
+        borderWidth: 2.5,
+        pointBackgroundColor: s.price_history.map(p => {
+          const isMin = p.price === mn;
+          return isMin ? '#7ecb7e' : '#00b4d8';
+        }),
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        tension: 0.4,
+        fill: true,
+        backgroundColor: (ctx) => {
+          const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 200);
+          g.addColorStop(0, 'rgba(0,180,216,0.25)');
+          g.addColorStop(1, 'rgba(0,180,216,0)');
+          return g;
+        }
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(10,22,40,0.95)',
+          borderColor: 'rgba(0,180,216,0.3)',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ' ' + fmt(ctx.parsed.y)
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#8fa3bc', font: { family: 'DM Mono', size: 11 } }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: {
+            color: '#8fa3bc',
+            font: { family: 'DM Mono', size: 11 },
+            callback: v => '$' + v.toLocaleString()
+          }
+        }
+      }
+    }
+  });
+}
+
+function closeDetail() {
+  selectedId = null;
+  document.getElementById('detail-panel').classList.remove('visible');
+  if (detailChart) { detailChart.destroy(); detailChart = null; }
+  render();
+}
+
+function formatDate(str) {
+  if (!str) return '—';
+  const d = new Date(str + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// ── Sample Data (fallback for local open-from-file) ───────────────
+const SAMPLE_DATA = {
+  "last_updated": "2026-05-26",
+  "sailings": {
+    "RC-001": { "ship": "Wonder of the Seas", "departure_port": "MIA", "destination": "Western Caribbean", "departure_date": "2026-07-12", "nights": 7, "url": "#", "price_history": [{"date":"2026-05-20","price":899,"original_price":1099},{"date":"2026-05-21","price":879,"original_price":1099},{"date":"2026-05-22","price":849,"original_price":1099},{"date":"2026-05-23","price":899,"original_price":1099},{"date":"2026-05-24","price":799,"original_price":1099},{"date":"2026-05-25","price":819,"original_price":1099},{"date":"2026-05-26","price":809,"original_price":1099}] },
+    "RC-002": { "ship": "Symphony of the Seas", "departure_port": "MIA", "destination": "Eastern Caribbean", "departure_date": "2026-08-02", "nights": 7, "url": "#", "price_history": [{"date":"2026-05-20","price":1199,"original_price":1399},{"date":"2026-05-21","price":1149,"original_price":1399},{"date":"2026-05-22","price":1099,"original_price":1399},{"date":"2026-05-23","price":1049,"original_price":1399},{"date":"2026-05-24","price":999,"original_price":1399},{"date":"2026-05-25","price":1029,"original_price":1399},{"date":"2026-05-26","price":989,"original_price":1399}] },
+    "RC-003": { "ship": "Allure of the Seas", "departure_port": "GAL", "destination": "Western Caribbean", "departure_date": "2026-06-28", "nights": 7, "url": "#", "price_history": [{"date":"2026-05-20","price":749,"original_price":999},{"date":"2026-05-21","price":729,"original_price":999},{"date":"2026-05-22","price":699,"original_price":999},{"date":"2026-05-23","price":679,"original_price":999},{"date":"2026-05-24","price":649,"original_price":999},{"date":"2026-05-25","price":669,"original_price":999},{"date":"2026-05-26","price":659,"original_price":999}] },
+    "RC-004": { "ship": "Navigator of the Seas", "departure_port": "LAX", "destination": "Mexican Riviera", "departure_date": "2026-07-19", "nights": 5, "url": "#", "price_history": [{"date":"2026-05-20","price":599,"original_price":799},{"date":"2026-05-21","price":579,"original_price":799},{"date":"2026-05-22","price":549,"original_price":799},{"date":"2026-05-23","price":529,"original_price":799},{"date":"2026-05-24","price":499,"original_price":799},{"date":"2026-05-25","price":519,"original_price":799},{"date":"2026-05-26","price":509,"original_price":799}] },
+    "RC-005": { "ship": "Oasis of the Seas", "departure_port": "FLL", "destination": "Bahamas", "departure_date": "2026-07-05", "nights": 4, "url": "#", "price_history": [{"date":"2026-05-20","price":449,"original_price":599},{"date":"2026-05-21","price":429,"original_price":599},{"date":"2026-05-22","price":399,"original_price":599},{"date":"2026-05-23","price":379,"original_price":599},{"date":"2026-05-24","price":349,"original_price":599},{"date":"2026-05-25","price":369,"original_price":599},{"date":"2026-05-26","price":359,"original_price":599}] }
+  }
+};
+
+loadData();
+</script>
+</body>
+</html>
