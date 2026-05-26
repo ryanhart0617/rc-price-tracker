@@ -1,0 +1,91 @@
+{
+  "last_updated": "2026-05-26",
+  "total_sailings": 5,
+  "sailings": {
+    "RC-001": {
+      "ship": "Wonder of the Seas",
+      "departure_port": "MIA",
+      "destination": "Western Caribbean",
+      "departure_date": "2026-07-12",
+      "nights": 7,
+      "url": "https://www.royalcaribbean.com/cruises/wonder-of-the-seas",
+      "price_history": [
+        {"date": "2026-05-20", "price": 899, "original_price": 1099},
+        {"date": "2026-05-21", "price": 879, "original_price": 1099},
+        {"date": "2026-05-22", "price": 849, "original_price": 1099},
+        {"date": "2026-05-23", "price": 899, "original_price": 1099},
+        {"date": "2026-05-24", "price": 799, "original_price": 1099},
+        {"date": "2026-05-25", "price": 819, "original_price": 1099},
+        {"date": "2026-05-26", "price": 809, "original_price": 1099}
+      ]
+    },
+    "RC-002": {
+      "ship": "Symphony of the Seas",
+      "departure_port": "MIA",
+      "destination": "Eastern Caribbean",
+      "departure_date": "2026-08-02",
+      "nights": 7,
+      "url": "https://www.royalcaribbean.com/cruises/symphony-of-the-seas",
+      "price_history": [
+        {"date": "2026-05-20", "price": 1199, "original_price": 1399},
+        {"date": "2026-05-21", "price": 1149, "original_price": 1399},
+        {"date": "2026-05-22", "price": 1099, "original_price": 1399},
+        {"date": "2026-05-23", "price": 1049, "original_price": 1399},
+        {"date": "2026-05-24", "price": 999, "original_price": 1399},
+        {"date": "2026-05-25", "price": 1029, "original_price": 1399},
+        {"date": "2026-05-26", "price": 989, "original_price": 1399}
+      ]
+    },
+    "RC-003": {
+      "ship": "Allure of the Seas",
+      "departure_port": "GAL",
+      "destination": "Western Caribbean",
+      "departure_date": "2026-06-28",
+      "nights": 7,
+      "url": "https://www.royalcaribbean.com/cruises/allure-of-the-seas",
+      "price_history": [
+        {"date": "2026-05-20", "price": 749, "original_price": 999},
+        {"date": "2026-05-21", "price": 729, "original_price": 999},
+        {"date": "2026-05-22", "price": 699, "original_price": 999},
+        {"date": "2026-05-23", "price": 679, "original_price": 999},
+        {"date": "2026-05-24", "price": 649, "original_price": 999},
+        {"date": "2026-05-25", "price": 669, "original_price": 999},
+        {"date": "2026-05-26", "price": 659, "original_price": 999}
+      ]
+    },
+    "RC-004": {
+      "ship": "Navigator of the Seas",
+      "departure_port": "LAX",
+      "destination": "Mexican Riviera",
+      "departure_date": "2026-07-19",
+      "nights": 5,
+      "url": "https://www.royalcaribbean.com/cruises/navigator-of-the-seas",
+      "price_history": [
+        {"date": "2026-05-20", "price": 599, "original_price": 799},
+        {"date": "2026-05-21", "price": 579, "original_price": 799},
+        {"date": "2026-05-22", "price": 549, "original_price": 799},
+        {"date": "2026-05-23", "price": 529, "original_price": 799},
+        {"date": "2026-05-24", "price": 499, "original_price": 799},
+        {"date": "2026-05-25", "price": 519, "original_price": 799},
+        {"date": "2026-05-26", "price": 509, "original_price": 799}
+      ]
+    },
+    "RC-005": {
+      "ship": "Oasis of the Seas",
+      "departure_port": "FLL",
+      "destination": "Bahamas",
+      "departure_date": "2026-07-05",
+      "nights": 4,
+      "url": "https://www.royalcaribbean.com/cruises/oasis-of-the-seas",
+      "price_history": [
+        {"date": "2026-05-20", "price": 449, "original_price": 599},
+        {"date": "2026-05-21", "price": 429, "original_price": 599},
+        {"date": "2026-05-22", "price": 399, "original_price": 599},
+        {"date": "2026-05-23", "price": 379, "original_price": 599},
+        {"date": "2026-05-24", "price": 349, "original_price": 599},
+        {"date": "2026-05-25", "price": 369, "original_price": 599},
+        {"date": "2026-05-26", "price": 359, "original_price": 599}
+      ]
+    }
+  }
+}
